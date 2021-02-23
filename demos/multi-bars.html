@@ -365,14 +365,9 @@
 							scale: 'mem',
 						},
 						{
-							label:	"Interact 10s (ms)",
+							label:	"FPS",
 							fill: "#558AB5",
 							scale: 'inter',
-						},
-						{
-							label:	"Toggle 6x (ms)",
-							fill: "#FAD55C",
-							scale: 'toggle',
 						},
 					],
 					plugins: [
@@ -387,15 +382,16 @@
 				const enabled = Array(d.length).fill(true);
 
 				function makeData() {
-					return [
-						d.filter((lib, i) => enabled[i]).map((lib, i) => i+1),
-						d.filter((lib, i) => enabled[i]).map(lib => lib[1]),
-						d.filter((lib, i) => enabled[i]).map(lib => lib[3].reduce((total, num) => total + num, 0)),
-						d.filter((lib, i) => enabled[i]).map(lib => lib[4][0]),
-						d.filter((lib, i) => enabled[i]).map(lib => lib[4][1]),
-						d.filter((lib, i) => enabled[i]).map(lib => lib[5] && lib[5].reduce((total, num) => total + num, 0)),
-						d.filter((lib, i) => enabled[i]).map(lib => lib[6] && lib[6].reduce((total, num) => total + num, 0)),
+					const data = [
+						d.filter((lib, i) => enabled[i]).map((lib, i) => i+1), // index
+						d.filter((lib, i) => enabled[i]).map(lib => lib[1]), // lib size
+						d.filter((lib, i) => enabled[i]).map(lib => lib[3].reduce((total, num) => total + num, 0)), // render time
+						d.filter((lib, i) => enabled[i]).map(lib => lib[4][0]), //peak heap
+						d.filter((lib, i) => enabled[i]).map(lib => lib[4][1]), // final heap
+						d.filter((lib, i) => enabled[i]).map(lib => lib[5] && lib[5].reduce((total, num) => (total + num), 0) / lib[5].length), // fps
+						// d.filter((lib, i) => enabled[i]).map(lib => lib[6] && lib[6].reduce((total, num) => total + num, 0)), // toggle 6x
 					];
+					return data;
 				}
 
 				let u = new uPlot(opts, makeData(), document.body);
@@ -421,7 +417,7 @@
 
 			fetch("../bench/results.json").then(r => r.json()).then(d => {
 				makeChart({ori: 0, dir:  1}, d);
-				makeChart({ori: 1, dir: -1}, d);
+				// makeChart({ori: 1, dir: -1}, d);
 			});
 		</script>
 	</body>
