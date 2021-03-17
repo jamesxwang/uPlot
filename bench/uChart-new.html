@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>uChart Demo</title>
+</head>
+<body>
+	<h2 id="wait">Loading lib....</h2>
+
+	<script src="./uChart-new.js"></script>
+
+	<div id="container" style="height: 600px; max-width: 1920px; margin: 0 auto"></div>
+	
+	<script>
+		function makeChart(data) {
+			console.time('chart');
+			const { axisData, series } = data;
+
+			const option = {
+				xAxis: {
+					type: 'category',
+					boundaryGap: false,
+					data: axisData
+				},
+				tooltip: {
+					trigger: 'axis',
+					show: true,
+					axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+						type: 'shadow',        // 默认为直线，可选为：'line' | 'shadow'
+						shadowStyle: {
+							color: '#e5e5e5'
+						}
+					}
+				},
+				yAxis: {
+					type: 'value'
+				},
+				legend: { data: ['CPU', 'RAM', 'TCP Out'] },
+				color: ['#ff00ff'],
+				series: series
+			};
+
+			let uChart = new UWChart('line', document.getElementById('container'));
+			uChart.setOption(option, 'uw-chart');
+
+			Promise.resolve().then(() => {
+				wait.textContent = "Done!";
+				console.timeEnd("chart");
+			});
+		}
+
+		function round2(val) {
+			return Math.round(val * 100) / 100;
+		}
+
+		function round3(val) {
+			return Math.round(val * 1000) / 1000;
+		}
+
+		function prepData(packed) {
+			console.time('prep');
+
+			// epoch,idl,recv,send,read,writ,used,free
+
+			const numFields = packed[0];
+			packed = packed.slice(numFields + 1);
+
+			var cpu = Array(packed.length/numFields);
+			var ram = Array(packed.length/numFields);
+			var tcp = Array(packed.length/numFields);
+			var axisData = [];
+
+			for (let i = 0, j = 0; i < packed.length; i += numFields, j++) {
+				let date = packed[i] * 60 * 1000;
+				axisData.push(date);
+				cpu[j] = round3(100 - packed[i+1]);
+				ram[j] = round2(100 * packed[i+5] / (packed[i+5] + packed[i+6]));
+				tcp[j] = packed[i+3];
+			}
+			const series = [
+				{
+					data: cpu,
+					type: 'line',
+					smooth: false,
+					name: 'CPU',
+				},
+				{
+					data: ram,
+					type: 'line',
+					smooth: false,
+					name: 'RAM',
+				},
+				{
+					data: tcp,
+					type: 'line',
+					smooth: false,
+					name: 'TCP Out',
+				}
+			]
+
+			console.timeEnd('prep');
+			
+			return { axisData, series };
+		}
+
+
+		let wait = document.getElementById("wait");
+		wait.textContent = "Fetching data.json (2.07MB)....";
+		fetch("data.json").then(r => r.json()).then(packed => {
+			wait.textContent = "Rendering...";
+			let data = prepData(packed);
+			setTimeout(() => makeChart(data), 0);
+		});
+
+
+	</script>
+</body>
+</html>
